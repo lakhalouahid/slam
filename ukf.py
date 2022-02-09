@@ -24,4 +24,9 @@ class UnscentedKalmanFilter(object):
     X[:, 1:n+1] += np.sqrt(lamb+n) * L
     X[:, n+1:] -= np.sqrt(lamb+n) * L
   
-    #
+    # Weights
+    wm = np.repeat(1/(2*(n+lamb)), 2*n+1, axis=0)
+    wm[0] *= 2 * lamb
+    wc = np.copy(wm)
+    wc[0] += (1 - alpha**2 + beta)
+
