@@ -14,14 +14,14 @@ class UnscentedKalmanFilter(object):
     self.S[:3, :3] = 0
 
   def update(self, u, zm):
-    ## UKF initialisation
+    # UKF initialisation
     kapa, alpha, beta, n = 5, 0.4, 2, self.S.shape[0]
     lamb = (n+kapa)*alpha**2 - n
     L = np.linalg.cholesky(self.S)
     
-    X = np.zeros((n, (2*n)+1))
-    X[:, 0] = self.mu
-    X[:, 1:n+1] = self.mu + np.sqrt(lamb+n) * L
-    X[:, n+1:] = self.mu - np.sqrt(lamb+n) * L
-
-    
+    # Sigma points
+    X = np.repeat(self.mu, (2*n)+1, axis=1)
+    X[:, 1:n+1] += np.sqrt(lamb+n) * L
+    X[:, n+1:] -= np.sqrt(lamb+n) * L
+  
+    #
