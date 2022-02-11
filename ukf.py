@@ -30,13 +30,13 @@ class UnscentedKalmanFilter(object):
     wm[0] *= 2 * lamb
     wc = np.copy(wm)
     wc[0] += (1 - alpha**2 + beta)
-    wc.reshape(-1, 1)
-    wm.reshape(-1, 1)
+    wc.reshape(1, -1)
+    wm.reshape(1, -1)
 
     # Predict the new mean
     Xp = np.copy(X)
 
-    R = np.diag([0, 0, 0])
+    R = np.zeros_like(self.S)
     Qu = np.diag([0, 0])
     dtheta = ut[1]*dt
 
@@ -51,4 +51,10 @@ class UnscentedKalmanFilter(object):
       Xp[:3] += np.array([np.cos(X[2:3]) * ut[0],
                           np.sin(X[2:3]) * ut[0],
                           np.repeat(np.array([[0]]), 2*n_mu+1, axis=1)], axis=0)
-
+    # compute the the mean estimate and the covariance estimate
+    self.mu = np.sum(wm * Xp, axis=1)
+    Xp -= self.mu
+    self.S = np.zeros_like(self.S)
+    for i in range(2*n_mu+1):
+      self.S += wc[i] * Xp[:,i:i+1] @ Xp[:,i:i+1].T
+    self.S += R
