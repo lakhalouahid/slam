@@ -58,3 +58,9 @@ class UnscentedKalmanFilter(object):
     for i in range(2*n_mu+1):
       self.S += wc[i] * Xp[:,i:i+1] @ Xp[:,i:i+1].T
     self.S += R
+
+    # Update the sigma points for observation
+    L = np.linalg.cholesky(self.S)
+    X = np.repeat(self.mu, (2*n_mu)+1, axis=1)
+    X[:, 1:n_mu+1] += np.sqrt(lamb+n_mu) * L
+    X[:, n_mu+1:] -= np.sqrt(lamb+n_mu) * L
