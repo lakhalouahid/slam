@@ -37,7 +37,7 @@ class UnscentedKalmanFilter(object):
     Xp = np.copy(X)
 
     R = np.zeros_like(self.S)
-    Qu = np.diag([0, 0])
+    Q = np.zeros_like(self.S)
     dtheta = ut[1]*dt
 
     # Update the mean vector
@@ -64,11 +64,28 @@ class UnscentedKalmanFilter(object):
     X = np.repeat(self.mu, (2*n_mu)+1, axis=1)
     X[:, 1:n_mu+1] += np.sqrt(lamb+n_mu) * L
     X[:, n_mu+1:] -= np.sqrt(lamb+n_mu) * L
+    dX = X - self.mu
 
     # Predict the position of the landmarks
     LX = np.reshape(X[3:].T, (-1, n_ld, 2))
     DX = LX - np.reshape(X[:2].T, (-1, 1, 2))
     RX2 = np.sum(DX**2, axis=2)
-    RX = np.sqrt(RX2)
-    ThetaX = np.arctan2(DX[:, :, 1], DX[:, :, 0]) - X[2:3, :].T
-    
+    RX = np.sqrt(RX2).T
+    ThetaX = np.arctan2(DX[:, :, 1], DX[:, :, 0]).T - X[2:3, :]
+    Zp = np.concatenate([RX, ThetaX], axis=0)
+
+    # Compute the mean predicted measurements
+    zp_mean = np.sum(wm * Zp, axis=1, keepdims=True)
+    dZ = Zp - zp_mean
+    S = Q
+    for i in range(2*n_mu+1):
+      S += wc[i] * dZ[:, i:i+1] @ dZ[:, i:i+1].T
+
+    Sigma = np.zeros((n_mu, 2*n_mu+1))
+    for i in range(2*n_mu+1):
+      Sigma += wc[i] * dX[:, i:i+1] @ dZ[:, i:i+1].T
+
+    K = Sigma @ np.linalg.inv(S)
+    self.mu +=  K @ (zm - zp_mean)
+    self.S -= K @ S @ K.T
+
