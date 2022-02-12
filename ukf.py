@@ -52,7 +52,7 @@ class UnscentedKalmanFilter(object):
                           np.sin(X[2:3]) * ut[0],
                           np.repeat(np.array([[0]]), 2*n_mu+1, axis=1)], axis=0)
     # compute the the mean estimate and the covariance estimate
-    self.mu = np.sum(wm * Xp, axis=1)
+    self.mu = np.sum(wm * Xp, axis=1, keepdims=True)
     Xp -= self.mu
     self.S = np.zeros_like(self.S)
     for i in range(2*n_mu+1):
@@ -64,3 +64,11 @@ class UnscentedKalmanFilter(object):
     X = np.repeat(self.mu, (2*n_mu)+1, axis=1)
     X[:, 1:n_mu+1] += np.sqrt(lamb+n_mu) * L
     X[:, n_mu+1:] -= np.sqrt(lamb+n_mu) * L
+
+    # Predict the position of the landmarks
+    LX = np.reshape(X[3:].T, (-1, n_ld, 2))
+    DX = LX - np.reshape(X[:2].T, (-1, 1, 2))
+    RX2 = np.sum(DX**2, axis=2)
+    RX = np.sqrt(RX2)
+    ThetaX = np.arctan2(DX[:, :, 1], DX[:, :, 0]) - X[2:3, :].T
+    
